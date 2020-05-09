@@ -36,6 +36,7 @@ using Test
             @test length(agen) == prod(s)
             @test collect(agen) == collect(it)
             @test agen == collect(it)
+            @test agen[1] == iterate(it)[1]
         end
         agen = array(g1)
         @test agen[3] == Float16(sin(3.0))
