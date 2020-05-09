@@ -31,8 +31,6 @@ Usage:
 For example you can exploit the binary-search functionality of 
 `searchsorted` without evaluating the function at all grid points.
 
-Usage:
-
 ```
     using GeneratorArrays
 
