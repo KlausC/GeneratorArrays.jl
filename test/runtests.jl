@@ -18,7 +18,11 @@ using Test
             @test iterate(agen) == iterate(it)
             @test agen == collect(it)
             @test agen[3] == it[3]
+
+            @test Base.IteratorSize(typeof(agen)) == Base.HasShape{N}()
+            @test Base.IteratorEltype(typeof(agen)) == Base.HasEltype()
         end
+
 
         @test_throws DomainError array("abc") 
         end

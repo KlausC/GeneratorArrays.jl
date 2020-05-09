@@ -3,8 +3,8 @@ module GeneratorArrays
 export array
 
 import Base.Generator, Base.Iterators.ProductIterator
-import Base: IteratorSize, HasShape, HasLength, IteratorEltype, eltype
-import Base: getindex, length, axes, size, iterate
+import Base: IteratorSize, HasShape, HasLength, IteratorEltype, HasEltype
+import Base: getindex, length, axes, size, iterate, eltype
 
 """
     GeneratorArray{T,N}(g) <: AbstractArray{T,N}
@@ -34,12 +34,12 @@ getindex(a::GeneratorArray, i...) = _getindex(a.gen, CartesianIndex(i...))
 
 iterate(a::GeneratorArray, s...) = iterate(a.gen, s...)
 
-IteratorSize(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = IteratorSize(G)
+IteratorSize(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = HasShape{N}()
 length(a::GeneratorArray) = length(a.gen)
 axes(a::GeneratorArray) = axes(a.gen)
 size(a::GeneratorArray) = size(a.gen)
 
-IteratorEltype(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = HasShape()
+IteratorEltype(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = HasEltype()
 eltype(a::GeneratorArray{T}) where T = T
 
 # implementation details
