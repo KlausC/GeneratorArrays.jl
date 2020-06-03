@@ -30,7 +30,7 @@ array(gen::G) where G = _array(G)(gen)
 
 # the AbstractArray interface implementation
 
-getindex(a::GeneratorArray, i...) = _getindex(a.gen, CartesianIndex(i...)) 
+getindex(a::GeneratorArray, i::Integer...) = _getindex(a.gen, CartesianIndex(i...)) 
 
 iterate(a::GeneratorArray, s...) = iterate(a.gen, s...)
 
@@ -78,7 +78,7 @@ dimension(::HasShape{N}) where N = N
 function _getindex(gen::G, i::CartesianIndex) where G<:Generator
     it = gen.iter
     N = dimension(G)
-    i = adjust_indices(N, i, gen)
+    i = adjust_indices(Val(N), i, gen)
     arg = _getindex(it, i)
     gen.f(arg)
 end
@@ -87,7 +87,7 @@ function _getindex(gen::G, i::CartesianIndex) where G<:ProductIterator
     it = gen.iterators
     N = dimension(G)
     n = length(it)
-    i = adjust_indices(N, i, gen)
+    i = adjust_indices(Val(N), i, gen)
     res = Vector{Any}(undef, n)
     @inbounds for k = 1:n
         sit = it[k]
@@ -102,12 +102,11 @@ _getindex(a, i::CartesianIndex) = getindex(a, i)
 
 split(i::CartesianIndex, n::Integer) = Base.IteratorsMD.split(i, Val(n))
 
-function adjust_indices(n::Integer, i::CartesianIndex, it)
-    I = Tuple(i)
-    m = length(I)
-    m == n && return i
-    (m == 0 || m > n && any(I[n+1:m] .!= 1)) && throw(BoundsError(it, I))  
-    m < n ? CartesianIndex(I..., ones(Int, n-m)...) : CartesianIndex(I[1:n])
+function adjust_indices(n::Val{N}, i::CartesianIndex{M}, it) where {N,M}
+    M == N && return i
+    I = i.I
+    (M == 0 || M > N && any(I[N+1:M] .!= 1)) && throw(BoundsError(it, I))  
+    CartesianIndex(ntuple(j -> j <= M ? I[j] : 1, n))
 end
 
 end # module

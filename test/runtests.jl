@@ -52,7 +52,9 @@ using Test
         @test agen[1,2,1,1] == 2
         @test_throws BoundsError agen[]
         @test_throws BoundsError agen[1,1,1,17]
-
+        @test agen[1:2] == a[1:2]
+        @test agen[:,2,1] == a .* 2
+        @test agen[:,:,1] == a * (1:5)'
         @test_throws DomainError array((x*y for x in a for y in a))
         end
     end
@@ -67,5 +69,6 @@ using Test
             @test a2 == collect(g2)
         end
     end 
+
 end
 
