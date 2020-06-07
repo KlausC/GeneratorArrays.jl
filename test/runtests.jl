@@ -1,6 +1,15 @@
 using GeneratorArrays
 using Test
 
+struct Foo0 end
+struct Foo1
+    x
+end
+struct Foo2
+    x
+    y
+end
+
 @testset "GeneratorArrays" begin
 
     @testset "iterators" begin
@@ -69,14 +78,6 @@ using Test
         end
     end 
 
-    struct Foo0 end
-    struct Foo1
-        x
-    end
-    struct Foo2
-        x
-        y
-    end
     let constructors = ((Foo0, 0), (Foo1, 1), (Foo2, 2)),
         iterators = ( (), (1,), (1,2), Int[], [1], [1,2])
 
