@@ -23,8 +23,7 @@ using Test
             @test Base.IteratorEltype(typeof(agen)) == Base.HasEltype()
         end
 
-
-        @test_throws DomainError array("abc") 
+        @test array("abγ") == ['a', 'b', 'γ'] 
         end
     end
 
@@ -70,5 +69,30 @@ using Test
         end
     end 
 
+    struct Foo0 end
+    struct Foo1
+        x
+    end
+    struct Foo2
+        x
+        y
+    end
+    let constructors = ((Foo0, 0), (Foo1, 1), (Foo2, 2)),
+        iterators = ( (), (1,), (1,2), Int[], [1], [1,2])
+
+        @testset "constructors with $F - $b" for b in iterators, (F, narg) in constructors
+            FF(i) = i == narg ? F : Base.Bottom
+            narg == 0 && @test eltype(array(F() for x in b)) == FF(0)
+            narg == 1 && @test eltype(array(F(x) for x in b)) == FF(1)
+            narg == 2 && @test eltype(array(F(x,x) for x in b)) == FF(2)
+        end
+    end
+
+    let iterators = ( ((), Union{}), ((1,), Tuple{Int,Int}))
+        @testset "product iterators $b" for (b, res)  in iterators
+            g = ((x,y) for x in b, y in 1:2)
+            @test eltype(array(g)) == res
+        end
+    end
 end
 

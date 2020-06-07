@@ -26,7 +26,8 @@ The object provides the `AbstractArray` interface in, but does not support `seti
 The wrapped object must have a size `(IteratorSize(g) == HasShape())`.
 """
 array(a::AbstractArray) = a
-array(gen::G) where G = _array(G)(gen)
+array(a::AbstractString) = [x for x in a]
+array(gen) = _array(gen)
 
 # the AbstractArray interface implementation
 
@@ -44,31 +45,35 @@ eltype(a::GeneratorArray{T}) where T = T
 
 # implementation details
 
-_array(::Type{G}) where G = _array(G, IteratorSize(G))
-function _array(::Type{G}, ::HasShape) where G
-    T = _eltype(G)
+_array(gen::G) where G = _array(gen, IteratorSize(G))
+function _array(gen::G, ::Union{HasShape,HasLength}) where G
+    T = _eltype(gen)
     N = dimension(G)
-    GeneratorArray{T,N,G}
+    GeneratorArray{T,N,G}(gen)
 end
-_array(T::Type, S::IteratorSize) = throw(DomainError(S, "unsupported iterator type $T"))
+_array(::T, S::IteratorSize) where T = throw(DomainError(S, "unsupported iterator type $T"))
 
 # the element type as inferred form the generator function - shortcut for identity
-_eltype(itr) = eltype(itr)
-function _eltype(gen::Type{<:Generator{B,F}}) where {B,F}
-    E = _eltype(B)
-    if F === typeof(identity)
+_eltype(gen::G) where G = eltype(G)
+function _eltype(gen::Generator{B,F}) where {B,F}
+    E = _eltype(gen.iter)
+    f = gen.f
+    if f === identity
         E
+    elseif isempty(gen.iter)
+        try
+            typeof(fnothings(f, E))
+        catch
+            Base.Bottom
+        end
     else
-        promote_type(Base.return_types(F.instance, (E,))...)
+        typeof(f(first(gen.iter)))
     end
 end
-_eltype(::Type{<:ProductIterator{T}}) where T = _prod_eltype(T)
-_prod_eltype(::Type{Tuple{}}) = Tuple{}
-function _prod_eltype(::Type{I}) where I<:Tuple
-    head = Base.tuple_type_head(I)
-    tail = Base.tuple_type_tail(I)
-    Base.tuple_type_cons(_eltype(head), _prod_eltype(tail))
-end
+_eltype(gen::ProductIterator{T}) where T = Base.to_tuple_type(_eltype.(gen.iterators))
+
+fnothings(f, E::Tuple) = f(ntuple(x->nothing, length(E))...)
+fnothings(f, ::Type) = f(nothing)
 
 dimension(a::T) where T = dimension(T)
 dimension(::Type{G}) where G = dimension(IteratorSize(G))
