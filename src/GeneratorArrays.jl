@@ -2,6 +2,8 @@ module GeneratorArrays
 
 export array
 
+using Base.Iterators
+
 import Base.Generator, Base.Iterators.ProductIterator
 import Base: IteratorSize, HasShape, HasLength, IteratorEltype, HasEltype
 import Base: getindex, length, axes, size, iterate, eltype
@@ -37,8 +39,12 @@ iterate(a::GeneratorArray, s...) = iterate(a.gen, s...)
 
 IteratorSize(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = HasShape{N}()
 length(a::GeneratorArray) = length(a.gen)
-axes(a::GeneratorArray) = axes(a.gen)
-size(a::GeneratorArray) = size(a.gen)
+axes(a::GeneratorArray) = axes(a, IteratorSize(a.gen))
+size(a::GeneratorArray) = size(a, IteratorSize(a.gen))
+axes(a::GeneratorArray, ::HasShape) = axes(a.gen)
+size(a::GeneratorArray, ::HasShape) = size(a.gen)
+axes(a::GeneratorArray, ::HasLength) = (Base.OneTo(length(a.gen)),)
+size(a::GeneratorArray, ::HasLength) = (length(a.gen),)
 
 IteratorEltype(::Type{<:GeneratorArray{T,N,G}}) where {T,N,G} = HasEltype()
 eltype(a::GeneratorArray{T}) where T = T
@@ -46,6 +52,9 @@ eltype(a::GeneratorArray{T}) where T = T
 # implementation details
 
 _array(gen::G) where G = _array(gen, IteratorSize(G))
+function _array(gen::G, ::Union{HasShape,HasLength}) where G<:Generator{<:Any,typeof(identity)}
+    _array(gen.iter)
+end
 function _array(gen::G, ::Union{HasShape,HasLength}) where G
     T = _eltype(gen)
     N = dimension(G)
@@ -103,7 +112,16 @@ function _getindex(gen::G, i::CartesianIndex) where G<:ProductIterator
     end
     tuple(res...)
 end
-_getindex(a, i::CartesianIndex) = getindex(a, i)
+
+function _getindex(gen::G, i::CartesianIndex) where G<:Iterators.Take{<:AbstractArray}
+    getindex(gen.xs[i])
+end
+function _getindex(gen::G, i::CartesianIndex{N}) where {N,G<:Iterators.Drop{<:AbstractArray}}
+    offset = CartesianIndex(ntuple(i -> i == 1 ? gen.n : 0, N))
+    getindex(gen.xs[i+offset])
+end
+
+_getindex(a::AbstractArray, i::CartesianIndex) = getindex(a, i)
 
 split(i::CartesianIndex, n::Integer) = Base.IteratorsMD.split(i, Val(n))
 

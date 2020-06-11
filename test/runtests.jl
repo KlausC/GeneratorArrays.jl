@@ -1,4 +1,6 @@
 using GeneratorArrays
+using Base.Iterators
+
 using Test
 
 struct Foo0 end
@@ -93,6 +95,21 @@ end
         @testset "product iterators $b" for (b, res)  in iterators
             g = ((x,y) for x in b, y in 1:2)
             @test eltype(array(g)) == res
+        end
+    end
+
+    let iterators = ([1,2,3,4], [1 3; 2 4])
+        @testset "Iterators.take" for iter in iterators
+            t = Iterators.take(iter, 3)
+            g = (x for x in t)
+            @test array(t) === array(g)
+            @test array(t) == [1, 2, 3]
+            @test array(x*x for x in t) == [1, 4, 9]
+            d = Iterators.drop(iter, 1)
+            h = (x for x in d)
+            @test array(d) === array(h)
+            @test array(d) == [2, 3, 4]
+            @test array(x + x for x in d) == [4, 6, 8]
         end
     end
 end
